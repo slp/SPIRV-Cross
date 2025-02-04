@@ -8022,14 +8022,18 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 				else if (has_decoration(c.self, DecorationSpecId))
 				{
 					// Fallback to macro overrides.
+					uint32_t constant_id = get_decoration(c.self, DecorationSpecId);
 					c.specialization_constant_macro_name =
-					    constant_value_macro_name(get_decoration(c.self, DecorationSpecId));
+					    constant_value_macro_name(constant_id);
 
 					statement("#ifndef ", c.specialization_constant_macro_name);
 					statement("#define ", c.specialization_constant_macro_name, " ", constant_expression(c));
 					statement("#endif");
 					statement("constant ", sc_type_name, " ", sc_name, " = ", c.specialization_constant_macro_name,
 					          ";");
+					
+					// Record the usage of macro
+					constant_macro_ids.insert(constant_id);
 				}
 				else
 				{
@@ -19165,6 +19169,20 @@ void CompilerMSL::set_combined_sampler_suffix(const char *suffix)
 const char *CompilerMSL::get_combined_sampler_suffix() const
 {
 	return sampler_name_suffix.c_str();
+}
+
+uint32_t CompilerMSL::get_constant_macro_count() const
+{
+	return constant_macro_ids.size();
+}
+
+void CompilerMSL::get_constant_macro_ids(uint32_t *ids) const
+{
+	uint32_t pos = 0;
+
+	for (uint32_t id : constant_macro_ids) {
+		ids[pos++] = id;
+	}
 }
 
 void CompilerMSL::emit_block_hints(const SPIRBlock &)
